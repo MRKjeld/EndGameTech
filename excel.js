@@ -3,6 +3,11 @@ const excelCtlr = function excelCtlr() {
     const colsInGrid = 100;
 
     /**
+     * REGEX
+     */
+    const REGEX_VALID_FORMULA = /^\(?[0-9]+([+/*-][0-9]+\)?)+$/;
+
+    /**
      * table object containing all cells and their respective attributes
      */
     const tableObject = {};
@@ -129,9 +134,29 @@ const excelCtlr = function excelCtlr() {
             updateCellOutput(cellId, cellInput);
             return;
         }
-
-        let cellOutput = '';
+        let cellOutput = stripFirstLetter(cellInput);
+        cellOutput = calculateStringArithmatic(cellOutput);
         updateCellOutput(cellId, cellOutput);
+    }
+
+    /**
+     * Returns answer to input formula. Input must be a valid arithmatic operation.
+     * @param {string} input 
+     * @returns {number} answer
+     */
+    const calculateStringArithmatic = function calculateStringArithmatic(input) {
+        if (!REGEX_VALID_FORMULA.test(input)) return 'Invalid Equasion';
+        
+        return eval(input); 
+    };
+
+    /**
+     * Removes first letter of string. 
+     * @param {string} string
+     * @returns {string}
+     */
+    const stripFirstLetter = function stripFirstLetter(string) {
+        return string.substring(1);
     }
 
     /**
