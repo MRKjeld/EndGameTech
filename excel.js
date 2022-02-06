@@ -45,6 +45,11 @@ const excelCtlr = function excelCtlr() {
                     };
                 }
 
+                //if value already exists in table object, populate output.
+                if (tableObject[cellName]) {
+                    inputElement.value = tableObject[cellName].output;
+                }
+
                 cell.appendChild(inputElement);
             }
         }
@@ -62,11 +67,21 @@ const excelCtlr = function excelCtlr() {
     };
 
     /**
-     * Destroys table and recreates it.
+     * Destroys and recreates table.
      */
     const refreshTable = function refreshTable() {
-        alert("Not Implemented");
+        destroyTable();
+        generateTable()
     };
+
+    /**
+     * Destroy excelTable
+     */
+    const destroyTable = function destroyTable() {
+        if (document.getElementById('excelTable')) {
+            document.getElementById('excelTable').remove();
+        }
+    }
 
     /**
      * Return a alphabet based on numerical value, ie: 25 = AA;
@@ -97,10 +112,59 @@ const excelCtlr = function excelCtlr() {
     const onCellBlur = function onCellBlur(evt) {
         /**
          * Save input
-         * Check for formula (starts with '=') (save output as )
+         * Check for formula (starts with '=')
+         * Check formula references
+         * Set as dependent on referenced cells
+         * Replace cell references with values. 
+         * Perform Arithmatic
          * 
-         * Check formula dependents
          */
+        let cellId = evt.target.id;
+        let cellInput = evt.target.value;
+        let cellElement = evt.target;
+        updateCellInput(cellId, cellInput);
+
+        if (isNonFormulaInput(cellInput)) {
+            //set output to same as input and return
+            updateCellOutput(cellId, cellInput);
+            return;
+        }
+
+        let cellOutput = '';
+        updateCellOutput(cellId, cellOutput);
+    }
+
+    /**
+     * checks where input is a valid formula, IE: has content or starts with a =
+     * @param {string} cellInput 
+     * @returns {boolean} isFormula
+     */
+    const isNonFormulaInput = function isNonFormulaInput(cellInput) {
+        if (!cellInput) return true;
+        if (cellInput.charAt(0) !== '=') return true;
+
+        return false;
+    };
+
+
+    /**
+     * Updates the tableObject's correlating cellId with the new input.
+     * @param {string} cellId 
+     * @param {string} cellInput 
+     */
+    const updateCellInput = function updateCellInput(cellId, cellInput) {
+        tableObject[cellId].input = cellInput;
+        console.log(tableObject[cellId]);
+    }
+
+    /**
+     * Updates the tableObject's correlating cellId with the new output and refreshes element value.
+     * @param {string} cellId 
+     * @param {string} cellOutput 
+     */
+    const updateCellOutput = function updateCellOutput(cellId, cellOutput) {
+        tableObject[cellId].output = cellOutput;
+        document.getElementById(cellId).value = cellOutput;
     }
 
     /**
@@ -108,6 +172,8 @@ const excelCtlr = function excelCtlr() {
      * @param {OnFocusEvent} evt 
      */
     const onCellFocus = function onCellFocus(evt) {
+        let cellId = evt.target.id;
+        evt.target.value = tableObject[cellId].input;
     }
 
     /**
