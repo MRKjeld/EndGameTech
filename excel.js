@@ -1,6 +1,7 @@
 const excelCtlr = function excelCtlr() {
     const rowsInGrid = 100;
     const colsInGrid = 100;
+    let dependentsCalled = [];
 
     /**
      * REGEX
@@ -119,7 +120,8 @@ const excelCtlr = function excelCtlr() {
      */
     const onCellBlur = function onCellBlur(evt) {
         let cellId = evt.target.id;
-        let cellInput = evt.target.value;        
+        let cellInput = evt.target.value;   
+        dependentsCalled = [];
         processCellData(cellId, cellInput);
     };
 
@@ -130,14 +132,15 @@ const excelCtlr = function excelCtlr() {
      * @returns 
      */
     const processCellData = function processCellData(cellId, cellInput) {
+        clearCellDependencies(cellId);
         updateCellInput(cellId, cellInput);
 
         if (isNonFormulaInput(cellInput)) {
             //set output to same as input and return
             updateCellOutput(cellId, cellInput);
+            processDependentCellData(cellId);
             return;
         }
-        debugger;
         let cellOutput = sanitizeFormula(cellInput);
         let referenceData = processCellReferenceData(cellOutput);
         updateReferencedDependents(cellId, referenceData.cellReferences);
@@ -156,9 +159,23 @@ const excelCtlr = function excelCtlr() {
         let dependents = tableObject[cellId].dependents;
         for (cell in dependents) {
             let dependentCell = tableObject[dependents[cell]];
+            if (hasDuplicates(dependentsCalled)) {
+                debugger;
+                alert('Dependency Loop: Please check formulas in ' + cellId + ' and ' + dependents[cell]);
+                return;
+            }
+            dependentsCalled.push(dependents[cell]);
             processCellData(dependents[cell], dependentCell.input);
         }
     };
+
+    const findCellId = function findCellId(cellId) {
+        return 
+    };
+
+    const hasDuplicates = function hasDuplicates(array) {
+        return (new Set(array)).size !== array.length;
+    }
 
     /**
      * Returns answer to input formula. Input must be a valid arithmatic operation.
@@ -192,9 +209,8 @@ const excelCtlr = function excelCtlr() {
             returnData.processedOutput = input.replace(cellRangeReferences[cellRefIndex], getCellRange(cellRangeReferences[cellRefIndex]));
         }
 
-        const cellReferences = returnData.processedOutput.match(REGEX_CELL_REFERENCE);
+        const cellReferences = getCellReferences(returnData.processedOutput);
         for (cellRefIndex in cellReferences) {
-            debugger;
             cellRef = cellReferences[cellRefIndex];
             cellValue = tableObject[cellRef.toUpperCase()].output || '';
             returnData.cellReferences.push(cellRef);
@@ -203,6 +219,51 @@ const excelCtlr = function excelCtlr() {
 
         return returnData;
     }
+
+    /**
+     * Returns cell references from string.
+     * @param {string} input 
+     * @returns {array} cellReferences
+     */
+    const getCellReferences = function getCellReferences(input) {
+        const cellReferences = input.match(REGEX_CELL_REFERENCE);
+        return cellReferences;
+    }
+
+    const clearCellDependencies = function clearCellDependencies(cellId) {
+        const dependents = getCellReferences(tableObject[cellId].input);
+        for (cell in dependents) {
+            tableObject[dependents[cell]].dependents = dependents.filter(function(dependentCellId) {
+                dependentCellId != cellId;
+            })
+        }
+    }
+
+    /**
+     * Gets cell ranges separated by commas. (IE: A2, A3, A4)
+     * @param {string} cellRange ie('A2:GG32')
+     * @returns explicitCellRange
+     */
+    const getCellRange = function processCellRangeReferences(cellRange) {
+        let cellReferenceArray = [];
+        //let cellRange = cellRangeReferences[cellRefIndex];
+        let cellRangeArray = cellRange.split(':');
+        let firstCell = tableObject[cellRangeArray[0]];
+        let firstColIndex = firstCell.column;
+        let firstRowIndex = firstCell.row;
+
+        let secondCell = tableObject[cellRangeArray[1]];
+        let secondColIndex = secondCell.column;
+        let secondRowIndex = secondCell.row;
+
+        for (let colIndex = firstColIndex; colIndex <= secondColIndex; colIndex++) {
+            for (let rowIndex = firstRowIndex; rowIndex <= secondRowIndex; rowIndex++) {
+                cellReferenceArray.push(convertNumberToLetter(colIndex) + rowIndex);
+            }
+        }
+        
+        return cellReferenceArray.join(',');
+    };
 
     /**
      * Sanitizes input string for processing. 
