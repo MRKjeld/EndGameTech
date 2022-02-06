@@ -5,8 +5,10 @@ const excelCtlr = function excelCtlr() {
     /**
      * REGEX
      */
-    const REGEX_VALID_FORMULA = /^\(?[0-9]+([+/*-][0-9]+\)?)+$/;
-
+    const REGEX_CELL_REFERENCE = /[A-z]+\d+/g;
+    const REGEX_CELL_RANGE_REFERENCE = /([A-z]+\d+):([A-z]+\d+)/g;
+    const REGEX_VALID_FORMULA = /^\(?[0-9]+(([+/*-][0-9]+)?\)?)+$/;
+    
     /**
      * table object containing all cells and their respective attributes
      */
@@ -46,7 +48,8 @@ const excelCtlr = function excelCtlr() {
                         column: colIndex,
                         row: rowIndex,
                         input: '',
-                        output: ''
+                        output: '',
+                        dependents: []
                     };
                 }
 
@@ -115,18 +118,18 @@ const excelCtlr = function excelCtlr() {
      * @param {OnBlurEvent} evt 
      */
     const onCellBlur = function onCellBlur(evt) {
-        /**
-         * Save input
-         * Check for formula (starts with '=')
-         * Check formula references
-         * Set as dependent on referenced cells
-         * Replace cell references with values. 
-         * Perform Arithmatic
-         * 
-         */
         let cellId = evt.target.id;
-        let cellInput = evt.target.value;
-        let cellElement = evt.target;
+        let cellInput = evt.target.value;        
+        processCellData(cellId, cellInput);
+    };
+
+    /**
+     * Handles all cell processing
+     * @param {string} cellId 
+     * @param {string} cellInput 
+     * @returns 
+     */
+    const processCellData = function processCellData(cellId, cellInput) {
         updateCellInput(cellId, cellInput);
 
         if (isNonFormulaInput(cellInput)) {
@@ -134,10 +137,28 @@ const excelCtlr = function excelCtlr() {
             updateCellOutput(cellId, cellInput);
             return;
         }
-        let cellOutput = stripFirstLetter(cellInput);
-        cellOutput = calculateStringArithmatic(cellOutput);
+        debugger;
+        let cellOutput = sanitizeFormula(cellInput);
+        let referenceData = processCellReferenceData(cellOutput);
+        updateReferencedDependents(cellId, referenceData.cellReferences);
+        cellOutput = referenceData.processedOutput;
+        cellOutput = (cellOutput) ? calculateStringArithmatic(cellOutput) : '';
         updateCellOutput(cellId, cellOutput);
-    }
+        processDependentCellData(cellId);
+    };
+
+    /**
+     * Finds dependents assigned to cell and updates them.
+     * TODO: include a check for dependents chain to make sure that there's no looping dependencies.
+     * @param {string} cellId 
+     */
+    const processDependentCellData = function processDependentCellData(cellId) {
+        let dependents = tableObject[cellId].dependents;
+        for (cell in dependents) {
+            let dependentCell = tableObject[dependents[cell]];
+            processCellData(dependents[cell], dependentCell.input);
+        }
+    };
 
     /**
      * Returns answer to input formula. Input must be a valid arithmatic operation.
@@ -150,13 +171,48 @@ const excelCtlr = function excelCtlr() {
         return eval(input); 
     };
 
+    const updateReferencedDependents = function updateReferencedDependents(dependentCellId, referencedCellIds) {
+        for (cell in referencedCellIds) {
+            tableObject[referencedCellIds[cell]].dependents.push(dependentCellId);
+        }
+    }
+
     /**
-     * Removes first letter of string. 
-     * @param {string} string
+     * 
+     * @param {string} input
+     * @returns {Object} 
+     */
+    const processCellReferenceData = function processCellReferenceData(input) {
+        const cellRangeReferences = input.match(REGEX_CELL_RANGE_REFERENCE);
+        const returnData = {
+            processedOutput: input,
+            cellReferences: []
+        }
+        for(cellRefIndex in cellRangeReferences) {
+            returnData.processedOutput = input.replace(cellRangeReferences[cellRefIndex], getCellRange(cellRangeReferences[cellRefIndex]));
+        }
+
+        const cellReferences = returnData.processedOutput.match(REGEX_CELL_REFERENCE);
+        for (cellRefIndex in cellReferences) {
+            debugger;
+            cellRef = cellReferences[cellRefIndex];
+            cellValue = tableObject[cellRef.toUpperCase()].output || '';
+            returnData.cellReferences.push(cellRef);
+            returnData.processedOutput = returnData.processedOutput.replace(cellRef, cellValue);
+        }
+
+        return returnData;
+    }
+
+    /**
+     * Sanitizes input string for processing. 
+     * @param {string} input
      * @returns {string}
      */
-    const stripFirstLetter = function stripFirstLetter(string) {
-        return string.substring(1);
+    const sanitizeFormula = function sanitizeFormula(input) {
+        input = input.substring(1);           //remove first letter (=)
+        input = input.replaceAll(' ', '');   //remove any spaces
+        return input;
     }
 
     /**
@@ -170,7 +226,6 @@ const excelCtlr = function excelCtlr() {
 
         return false;
     };
-
 
     /**
      * Updates the tableObject's correlating cellId with the new input.
