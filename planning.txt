@@ -1,0 +1,68 @@
+1. Create index.html in your favourite text editor. Use pure JavaScript in your code – no
+JavaScript libraries or frameworks. Your JavaScript can either be in a separate .js file, or it
+can be contained in the index.html page.
+
+2. When loading index.html into Chrome or Firefox, it should draw a 100x100 grid of cells,
+with columns labelled A-Z, AA, AB, AC, etc. and rows numbered 1 to 100.
+
+---CV100 grid---
+use <body onload> for initialization, to generate table.
+require a refresh method as well.
+require a way to convert numbers to letters:
+    array with all 24 letters, call recursively if needed for more 24 characters.
+iterate through rows / columns to create required table with cells.
+----------------
+
+3. When you click in a cell and enter a number, it should store the number in a JavaScript
+object (note: this would be lost when you refresh the page).
+
+---Caching Cell Values---
+when iterating through cells, create cell objects.
+when focus lost on cell, save value to object.
+----------------
+
+4. Have a refresh button that redraws the grid (without refreshing the page) and inserts data
+into cells where you've saved it.
+
+---Refresh---
+Add a function to destroy the table, then run the generate table function again.
+When generating table, check if the cell's object value is cached, and if set the value of the cell
+Link function to a button, trigger onclick
+Should this be visually obvious? Might need to add a timeout.
+----------------
+
+5. Add support for some basic formulas. For example if you enter "=A1+A2" into A3 it
+should calculate the sum of these two cells and display the result in A3. Updating A1 would
+update A3.
+
+---Formulas---
+Could use eval() for simple arithmatic - this would require validation
+Need to distinguish between formulas and display values.
+Need to make cells include dependents that they can trigger the update for (so that if I change A1 and it's referenced by B1, B1 will also update afterwards)
+Need to make sure that I'm not allowing a recursive loop, (IE: A1 dependent on B1, B1 dependent on A1)
+
+add to cellObject { 
+    input : 'user input',
+    value : 'display output'
+    dependants : [cell references]
+    }
+
+cellObject.input will display when user is interacting with cell, then save to object, along with any dependents. (cells used in formula)
+cellObject.value will be evaluated based on input (ie: if there's a formula) and then displayed.
+cellObject.dependents will include an array of dependents, iterate through these and update them. *Check for recursive loop beforehand*
+----------------
+
+6. Add support for some basic functions. For example if you enter "=sum(A1:A10)" into
+A11, then it should calculate the sum of all cells in the range and display the result in
+A11. Updating any value in the range would recalculate A11.
+
+---Operations---
+Grab lower range reference and higher range reference (ie: G1:Z3) and iterate between to collect cell references.
+Check for operation and separate references by appropriate arithmatic operator (ie: + for SUM)
+----------------
+
+7. Add support for formatting, for example bold, italics and underline
+
+---Formatting---
+Modify innerHTML of text to include appropriate tags (<b> <i> <u>)
+----------------
