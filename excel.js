@@ -349,6 +349,53 @@ const excelCtlr = function excelCtlr() {
      */
     const initialize = function initialize() {
         generateTable();
+        addEventListeners();
+    };
+
+    const addEventListeners = function addEventListeners() {
+        let ctlrDown = false;
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Control') {
+                ctlrDown = true;
+            }
+
+            if (!ctlrDown) return;
+
+            if (event.key === 'b') {
+                setElementBold(event.target);
+            }
+            if (event.key === 'u') {
+                setElementUnderline(event.target);
+            }
+            if (event.key === 'i') {
+                setElementItalics(event.target);
+            }
+            
+        });
+        document.addEventListener('keyup', function(event) {
+            if (event.key === 'Control') {
+                ctlrDown = false;
+            }
+        });
+    };
+
+    const setElementItalics = function setElementItalics(element) {
+        const cssClass = 'italicsText';
+        setElementCss(element, cssClass);
+    };
+
+    const setElementBold = function setElementBold(element) {
+        const cssClass = 'boldText';
+        setElementCss(element, cssClass);
+    };
+
+    const setElementUnderline = function setElementUnderline(element) {
+        const cssClass = 'underlineText';
+        setElementCss(element, cssClass);
+    };
+
+    const setElementCss = function (element, cssClass) {
+        element.classList.contains(cssClass) ? element.classList.remove(cssClass) : element.classList.add(cssClass);
     };
 
 

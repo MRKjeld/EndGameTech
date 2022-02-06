@@ -1,3 +1,15 @@
+.boldText{
+    font-weight: bold;
+}
+
+.italicsText {
+    font-style: italic; 
+}
+
+.underlineText {
+    text-decoration: underline;
+}
+
 .headerDiv {
     height: 4rem;
 }
