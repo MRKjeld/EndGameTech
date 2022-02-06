@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="style.css">
     <title>EndGame Tech Assessment</title>
 </head>
-<body>
+<body onload="excelCtlr.initialize()">
     <script src = "excel.js"></script>
+    <button id="refreshBtn" onclick="excelCtlr.refreshTable()">Refresh</button>
     <div id='main'></div>
 </body>
 </html>
