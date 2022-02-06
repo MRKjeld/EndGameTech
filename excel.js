@@ -9,7 +9,7 @@ const excelCtlr = function excelCtlr() {
     const REGEX_CELL_REFERENCE = /[A-z]+\d+/g;
     const REGEX_CELL_RANGE_REFERENCE = /([A-z]+\d+):([A-z]+\d+)/g;
     const REGEX_CELL_OPERATOR = /(\w*\(.*\))/g;
-    const REGEX_VALID_FORMULA = /^\(?[0-9]+(([+/*-][0-9]+)?\)?)+$/;
+    const REGEX_VALID_FORMULA = /^\(?[0-9]+([.]?[0-9]*)([+/*-][0-9]+([.][0-9]+)?\)?)+$/;
     
     /**
      * table object containing all cells and their respective attributes
@@ -163,10 +163,12 @@ const excelCtlr = function excelCtlr() {
         let dependents = tableObject[cellId].dependents;
         for (cell in dependents) {
             let dependentCell = tableObject[dependents[cell]];
-            if (hasDuplicates(dependentsCalled)) {
+            if (dependentsCalled.filter(dependenctCellId => dependenctCellId === cellId).length > 1) {
+                debugger;
                 alert('Dependency Loop: Please check formulas in ' + cellId + ' and ' + dependents[cell]);
                 return;
             }
+
             dependentsCalled.push(dependents[cell]);
             processCellData(dependents[cell], dependentCell.input);
         }
@@ -216,7 +218,7 @@ const excelCtlr = function excelCtlr() {
             cellRef = cellReferences[cellRefIndex];
             cellValue = tableObject[cellRef.toUpperCase()].output || '0';
             returnData.cellReferences.push(cellRef);
-            returnData.processedOutput = returnData.processedOutput.replace(cellRef, cellValue);
+            returnData.processedOutput = returnData.processedOutput.toUpperCase().replace(cellRef, cellValue);
         }
 
         return returnData;
@@ -229,6 +231,9 @@ const excelCtlr = function excelCtlr() {
      */
     const getCellReferences = function getCellReferences(input) {
         const cellReferences = input.match(REGEX_CELL_REFERENCE);
+        for (cell in cellReferences) {
+            cellReferences[cell] = cellReferences[cell].toUpperCase();
+        }
         return cellReferences;
     }
 
@@ -250,11 +255,11 @@ const excelCtlr = function excelCtlr() {
         let cellReferenceArray = [];
         //let cellRange = cellRangeReferences[cellRefIndex];
         let cellRangeArray = cellRange.split(':');
-        let firstCell = tableObject[cellRangeArray[0]];
+        let firstCell = tableObject[cellRangeArray[0].toUpperCase()];
         let firstColIndex = firstCell.column;
         let firstRowIndex = firstCell.row;
 
-        let secondCell = tableObject[cellRangeArray[1]];
+        let secondCell = tableObject[cellRangeArray[1].toUpperCase()];
         let secondColIndex = secondCell.column;
         let secondRowIndex = secondCell.row;
 
