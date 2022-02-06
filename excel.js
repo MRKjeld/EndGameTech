@@ -8,6 +8,7 @@ const excelCtlr = function excelCtlr() {
      */
     const REGEX_CELL_REFERENCE = /[A-z]+\d+/g;
     const REGEX_CELL_RANGE_REFERENCE = /([A-z]+\d+):([A-z]+\d+)/g;
+    const REGEX_CELL_OPERATOR = /(\w*\(.*\))/g;
     const REGEX_VALID_FORMULA = /^\(?[0-9]+(([+/*-][0-9]+)?\)?)+$/;
     
     /**
@@ -144,7 +145,7 @@ const excelCtlr = function excelCtlr() {
         let cellOutput = sanitizeFormula(cellInput);
         let referenceData = processCellReferenceData(cellOutput);
         updateReferencedDependents(cellId, referenceData.cellReferences);
-        cellOutput = referenceData.processedOutput;
+        cellOutput = processCellOperators(referenceData.processedOutput);
         cellOutput = (cellOutput) ? calculateStringArithmatic(cellOutput) : '';
         updateCellOutput(cellId, cellOutput);
         processDependentCellData(cellId);
@@ -160,17 +161,12 @@ const excelCtlr = function excelCtlr() {
         for (cell in dependents) {
             let dependentCell = tableObject[dependents[cell]];
             if (hasDuplicates(dependentsCalled)) {
-                debugger;
                 alert('Dependency Loop: Please check formulas in ' + cellId + ' and ' + dependents[cell]);
                 return;
             }
             dependentsCalled.push(dependents[cell]);
             processCellData(dependents[cell], dependentCell.input);
         }
-    };
-
-    const findCellId = function findCellId(cellId) {
-        return 
     };
 
     const hasDuplicates = function hasDuplicates(array) {
@@ -190,7 +186,10 @@ const excelCtlr = function excelCtlr() {
 
     const updateReferencedDependents = function updateReferencedDependents(dependentCellId, referencedCellIds) {
         for (cell in referencedCellIds) {
-            tableObject[referencedCellIds[cell]].dependents.push(dependentCellId);
+            let dependents = tableObject[referencedCellIds[cell]].dependents;
+            if (!dependents.includes(dependentCellId)) {
+                dependents.push(dependentCellId);
+            }
         }
     }
 
@@ -212,7 +211,7 @@ const excelCtlr = function excelCtlr() {
         const cellReferences = getCellReferences(returnData.processedOutput);
         for (cellRefIndex in cellReferences) {
             cellRef = cellReferences[cellRefIndex];
-            cellValue = tableObject[cellRef.toUpperCase()].output || '';
+            cellValue = tableObject[cellRef.toUpperCase()].output || '0';
             returnData.cellReferences.push(cellRef);
             returnData.processedOutput = returnData.processedOutput.replace(cellRef, cellValue);
         }
@@ -258,11 +257,31 @@ const excelCtlr = function excelCtlr() {
 
         for (let colIndex = firstColIndex; colIndex <= secondColIndex; colIndex++) {
             for (let rowIndex = firstRowIndex; rowIndex <= secondRowIndex; rowIndex++) {
-                cellReferenceArray.push(convertNumberToLetter(colIndex) + rowIndex);
+                cellReferenceArray.push(getLetterFromNumber(colIndex) + rowIndex);
             }
         }
         
         return cellReferenceArray.join(',');
+    };
+
+    /**
+     * Returns input with cell operations (IE: SUM()) replaced with valid arithmatic
+     * @param {string} input 
+     * @returns {string} modifiedInput
+     */
+    const processCellOperators = function processCellOperators(input) {
+        const regexCellOperator = REGEX_CELL_OPERATOR;
+        const cellOperations = input.match(regexCellOperator);
+        for (operatorIndex in cellOperations) {
+            const lastCharIndex = cellOperations[operatorIndex].indexOf('(');
+            const operator = cellOperations[operatorIndex].substring(0, lastCharIndex);
+            switch (operator) {
+                case 'SUM': 
+                    input = cellOperations[operatorIndex].replaceAll(',', '+').substring(lastCharIndex);
+                    break;
+            }
+        }
+        return input;
     };
 
     /**
