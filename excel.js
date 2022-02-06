@@ -22,6 +22,8 @@ const excelCtlr = function excelCtlr() {
     const generateTable = function generateTable() {
         let tableElement = document.createElement('table');
         tableElement.id = 'excelTable';
+        tableElement.classList.add('excelTable');
+
         for(let rowIndex = 0; rowIndex <= rowsInGrid; rowIndex++) {
             let newRow = tableElement.insertRow(rowIndex);
 
@@ -60,6 +62,7 @@ const excelCtlr = function excelCtlr() {
                     inputElement.value = tableObject[cellName].output;
                 }
 
+                cell.classList.add('excelCell');
                 cell.appendChild(inputElement);
             }
         }
@@ -179,7 +182,7 @@ const excelCtlr = function excelCtlr() {
      * @returns {number} answer
      */
     const calculateStringArithmatic = function calculateStringArithmatic(input) {
-        if (!REGEX_VALID_FORMULA.test(input)) return 'Invalid Equasion';
+        if (!REGEX_VALID_FORMULA.test(input)) return input;
         
         return eval(input); 
     };

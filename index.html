@@ -9,7 +9,9 @@
 </head>
 <body onload="excelCtlr.initialize()">
     <script src = "excel.js"></script>
-    <button id="refreshBtn" onclick="excelCtlr.refreshTable()">Refresh</button>
+    <div id='header' class = 'headerDiv'>
+        <button id="refreshBtn" class="refreshButton" onclick="excelCtlr.refreshTable()">Refresh</button>
+    </div>
     <div id='main'></div>
 </body>
 </html>
